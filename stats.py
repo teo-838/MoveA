@@ -7,6 +7,7 @@ Created on Sat Sep 25 23:18:04 2021
 import csv
 # Import library
 import itertools
+from os import makedirs, path
 from statistics import mean, median, stdev, variance
 
 import matplotlib.pyplot as plt
@@ -22,15 +23,16 @@ from statannot import add_stat_annotation
 # Read and write csv file
 def read_csv(path):
     rows = []
-    with open(path) as csvfile:
+    with open(path, encoding="latin-1") as csvfile:
         file_reader = csv.reader(csvfile)
         for row in file_reader:
             rows.append(list(row))
     return rows
 
 
-def writecsv(path, r):
-    f = open(path, "w", newline="")
+def writecsv(dir, filename, r):
+    makedirs(dir, exist_ok=True)
+    f = open(path.join(dir, filename), "w", newline="")
     writer = csv.writer(f)
     writer.writerows(r)
     f.close()
@@ -77,9 +79,8 @@ def manual_displacement(lst):
 
 def system(lst):
     Treatment = []
-    for field in lst:
-        print(field)
-        data = read_csv(field + ".csv")  # retrieve
+    for file in lst:
+        data = read_csv(file)  # retrieve
         Track = list(map(lambda x: float(x[2]), data[1 : len(data) - 2]))
         Treatment += Track
     return Treatment
@@ -87,8 +88,8 @@ def system(lst):
 
 def system_displacement(lst):
     Treatment = []
-    for field in lst:
-        data = read_csv(field + ".csv")  # retrieve
+    for file in lst:
+        data = read_csv(file)  # retrieve
         Track = list(map(lambda x: float(x[1]), data[1 : len(data) - 2]))
         Treatment += Track
     return Treatment
@@ -113,7 +114,7 @@ def unequal_var_t(data1, data2, mu_interest, conf_lvl):
     return [mean1, mean2, var1, var2, df, t, tcrit, p, n1, n2]
 
 
-def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim):
+def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim, output="."):
     Treatment_color = sns.color_palette("tab10")[0]  # Color for treatment boxplot
     Control_color = sns.color_palette("tab10")[1]  # Color for control boxplot
     O65_color = sns.color_palette("tab10")[2]  # Color for O65 boxplot
@@ -144,15 +145,17 @@ def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim):
     )  # Annotate the Welch's t-test results (Unequal variance t-test) for each pair of comparison
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
     ax.yaxis.set_ticks(np.arange(0, t_lim[1], 0.5))
     plt.ylim(t_lim[0], t_lim[1])
     ax.grid(False)
     plt.show()
-    fig8.savefig(TaskNo + " t-test_welch.tiff")  # Fig8
+    makedirs(output, exist_ok=True)
+    fig8.savefig(path.join(output, TaskNo + " t-test_welch.tiff"))  # Fig8
 
 
-def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH):
+def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH, output="."):
     # Plot speed of each treatment and control groups
     Treatment_color = sns.color_palette("tab10")[0]  # Color for treatment spectrum
     Control_color = sns.color_palette("tab10")[1]  # Color for control spectrum
@@ -192,11 +195,13 @@ def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH):
     ax.grid(False)
     # plt.title('Speed Distribution')
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    fig9.savefig(TaskNo + " Speed.tiff")  # Fig9
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
+    makedirs(output, exist_ok=True)
+    fig9.savefig(path.join(output, TaskNo + " Speed.tiff"))  # Fig9
 
 
-def fig10(TaskNo, Grplabel, boolen, Group_displacement, d_lim, FigSizeW, FigSizeH):
+def fig10(TaskNo, Grplabel, boolen, Group_displacement, d_lim, FigSizeW, FigSizeH, output="."):
     # Plot speed of each treatment and control groups
     Treatment_color = sns.color_palette("tab10")[0]  # Color for treatment spectrum
     Control_color = sns.color_palette("tab10")[1]  # Color for control spectrum
@@ -238,11 +243,13 @@ def fig10(TaskNo, Grplabel, boolen, Group_displacement, d_lim, FigSizeW, FigSize
     ax.grid(False)
     # plt.title('Movement Distribution')
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    fig10.savefig(TaskNo + " Displacement.tiff")  # Fig10
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
+    makedirs(output, exist_ok=True)
+    fig10.savefig(path.join(output, TaskNo + " Displacement.tiff"))  # Fig10
 
 
-def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp):
+def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp, output="."):
     # Calculate the Spectrum Peak (Using gaussian_kde to calculate)
     # Speed
     Peak = []
@@ -289,11 +296,11 @@ def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp):
     res.append(["Spectrum Peak (density)"] + list(map(lambda x: x[0], Peak)))
     res.append(
         ["25 percentile (speed µm/s)"]
-        + list(map(lambda x: np.percentile(x, 25), Group_speed))
+        + list(map(lambda x: str(np.percentile(x, 25)), Group_speed))
     )
     res.append(
         ["75 percentile (speed µm/s)"]
-        + list(map(lambda x: np.percentile(x, 75), Group_speed))
+        + list(map(lambda x: str(np.percentile(x, 75)), Group_speed))
     )
     res.append(["IQR (speed µm/s)"] + list(map(lambda x: iqr(x, axis=0), Group_speed)))
 
@@ -352,11 +359,11 @@ def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp):
     )
     res.append(
         ["25 percentile (displacement µm)"]
-        + list(map(lambda x: np.percentile(x, 25), Group_displacement))
+        + list(map(lambda x: str(np.percentile(x, 25)), Group_displacement))
     )
     res.append(
         ["75 percentile (displacement µm)"]
-        + list(map(lambda x: np.percentile(x, 75), Group_displacement))
+        + list(map(lambda x: str(np.percentile(x, 75)), Group_displacement))
     )
     res.append(
         ["IQR (displacement µm)"]
@@ -364,7 +371,7 @@ def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp):
     )
 
     # Store statistical analysis result (both A. and B.) into .csv file
-    writecsv(TaskNo + " StatDetail.csv", res)  # File5
+    writecsv(output, TaskNo + " StatDetail.csv", res)  # File5
 
 
 def run(
@@ -372,11 +379,12 @@ def run(
     group_labels,
     group_results,
     two_or_three_groups_flag,
-    x_lim,
-    d_lim,
-    t_lim,
+    x_lim=[0, 1.2, 0, 9.0],
+    d_lim=[0, 250, 0, 0.05],
+    t_lim=[0, 2.5],
     fig_size_w=10,
     fig_size_h=10,
+    output=".",
 ):
     # Creating all possible comparison to perform unequal variance t-test
     permutation = list(itertools.combinations(group_labels, 2))
@@ -389,9 +397,8 @@ def run(
     Group_speed = []
     Group_displacement = []
     for group in group_results:
-        Group_speed.append(
-            system(group)
-        )  # Retrieve the data from every treatment and control groups and append into the main list (Group_speed for speed, Group_displacement for displacement)
+        # Retrieve the data from every treatment and control groups and append into the main list (Group_speed for speed, Group_displacement for displacement)
+        Group_speed.append(system(group))
         Group_displacement.append(system_displacement(group))
 
     # Prepare for statistic csv file: dict_grp
@@ -415,7 +422,7 @@ def run(
         list(zip(Lstofgroup, Valueofgroup)), columns=["Group", "Speed (µm/s)"]
     )  # Generate a dataframe with two column: Group and Speed
 
-    fig8(name, group_labels, two_or_three_groups_flag, df, permutation, t_lim)
+    fig8(name, group_labels, two_or_three_groups_flag, df, permutation, t_lim, output)
     fig9(
         name,
         group_labels,
@@ -424,6 +431,7 @@ def run(
         x_lim,
         fig_size_w,
         fig_size_h,
+        output
     )
     fig10(
         name,
@@ -433,8 +441,9 @@ def run(
         d_lim,
         fig_size_w,
         fig_size_h,
+        output
     )
-    statresult(name, group_labels, Group_speed, Group_displacement, dict_grp)
+    statresult(name, group_labels, Group_speed, Group_displacement, dict_grp, output)
 
 
 # Execute Genetic Dataset
@@ -443,18 +452,18 @@ def run_genetic():
     Grplabel = ["SKD1", "Control"]
     Lst_of_Fields = [
         [
-            "SKD1_1 result",
-            "SKD1_2 result",
-            "SKD1_4 result",
-            "SKD1_6 result",
-            "SKD1_7 result",
-            "SKD1_8 result",
+            "SKD1_1 result.csv",
+            "SKD1_2 result.csv",
+            "SKD1_4 result.csv",
+            "SKD1_6 result.csv",
+            "SKD1_7 result.csv",
+            "SKD1_8 result.csv",
         ],
         [
-            "Control_4 result",
-            "Control_5 result",
-            "Control_6 result",
-            "Control_7 result",
+            "Control_4 result.csv",
+            "Control_5 result.csv",
+            "Control_6 result.csv",
+            "Control_7 result.csv",
         ],
     ]
 
@@ -467,10 +476,12 @@ def run_genetic():
     d_lim = [0, 250, 0, 0.05]
     t_lim = [0, 2.5]
 
-    run(TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim)
+    run(
+        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
+    )
 
 
-### Execute Chemical SIT Dataset
+# Execute Chemical SIT Dataset
 def run_chemical_sit():
     TaskNo = "18_4_2022 Chemical Sitaxentan Result"
     Grplabel = ["Sitaxentan", "Control"]  # Note: len(Grplabel)=len(Lst_of_Fields)
@@ -501,10 +512,12 @@ def run_chemical_sit():
     d_lim = [0, 250, 0, 0.05]
     t_lim = [0, 2.5]
 
-    run(TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim)
+    run(
+        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
+    )
 
 
-### Execute Chemical TGZ Dataset
+# Execute Chemical TGZ Dataset
 def run_chemical_tgz():
     TaskNo = "18_4_2022 Chemical Troglitazone Result"
     Grplabel = ["Troglitazone", "Control"]  # Note: len(Grplabel)=len(Systemlst)
@@ -529,10 +542,12 @@ def run_chemical_tgz():
     d_lim = [0, 250, 0, 0.05]
     t_lim = [0, 2.5]
 
-    run(TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim)
+    run(
+        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
+    )
 
 
-### Execute Biological Dataset
+# Execute Biological Dataset
 def run_biological():
     TaskNo = "18_4_2022 Biological Result"
     Grplabel = ["S4", "O65", "Control"]  # Note: len(Grplabel)=len(Systemlst)
@@ -551,11 +566,10 @@ def run_biological():
     d_lim = [0, 250, 0, 0.05]
     t_lim = [0, 2.5]
 
-    run(TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim)
+    run(
+        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
+    )
 
 
 if __name__ == "__main__":
     run_genetic()
-    run_chemical_sit()
-    run_chemical_tgz()
-    run_biological()

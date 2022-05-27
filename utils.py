@@ -17,3 +17,7 @@ def write_csv(dir, filename, r):
     writer = csv.writer(f)
     writer.writerows(r)
     f.close()
+
+
+
+#HELLO

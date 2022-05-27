@@ -4,10 +4,9 @@ Created on Sat Sep 25 23:18:04 2021
 
 @author: user
 """
-import csv
 # Import library
 import itertools
-from os import makedirs, path
+from os import path
 from statistics import mean, median, stdev, variance
 
 import matplotlib.pyplot as plt
@@ -19,23 +18,7 @@ from scipy import stats
 from scipy.stats import iqr
 from statannot import add_stat_annotation
 
-
-# Read and write csv file
-def read_csv(path):
-    rows = []
-    with open(path, encoding="latin-1") as csvfile:
-        file_reader = csv.reader(csvfile)
-        for row in file_reader:
-            rows.append(list(row))
-    return rows
-
-
-def writecsv(dir, filename, r):
-    makedirs(dir, exist_ok=True)
-    f = open(path.join(dir, filename), "w", newline="")
-    writer = csv.writer(f)
-    writer.writerows(r)
-    f.close()
+from .utils import write_csv, read_csv
 
 
 # Retrieve analysis file (File 3/ File 4) and convert the data into correct format (Speed data: system(), Displacement data: system_displacement())
@@ -151,7 +134,6 @@ def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim, output="."):
     plt.ylim(t_lim[0], t_lim[1])
     ax.grid(False)
     plt.show()
-    makedirs(output, exist_ok=True)
     fig8.savefig(path.join(output, TaskNo + " t-test_welch.tiff"))  # Fig8
 
 
@@ -189,19 +171,20 @@ def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH, outpu
         ax.set(xlabel="Speed (µm/s)", ylabel="Density")
         ax.xaxis.set_ticks(np.arange(0, x_lim[1], 0.1))
         ax.yaxis.set_ticks(np.arange(0, x_lim[3], 1))
+        ax.grid(False)
     # plt.legend();
     plt.xlim(x_lim[0], x_lim[1])
     plt.ylim(x_lim[2], x_lim[3])
-    ax.grid(False)
     # plt.title('Speed Distribution')
     figManager = plt.get_current_fig_manager()
     if hasattr(figManager, "window"):
         figManager.window.showMaximized()
-    makedirs(output, exist_ok=True)
     fig9.savefig(path.join(output, TaskNo + " Speed.tiff"))  # Fig9
 
 
-def fig10(TaskNo, Grplabel, boolen, Group_displacement, d_lim, FigSizeW, FigSizeH, output="."):
+def fig10(
+    TaskNo, Grplabel, boolen, Group_displacement, d_lim, FigSizeW, FigSizeH, output="."
+):
     # Plot speed of each treatment and control groups
     Treatment_color = sns.color_palette("tab10")[0]  # Color for treatment spectrum
     Control_color = sns.color_palette("tab10")[1]  # Color for control spectrum
@@ -237,15 +220,14 @@ def fig10(TaskNo, Grplabel, boolen, Group_displacement, d_lim, FigSizeW, FigSize
         ax.set(xlabel="Displacement (µm)", ylabel="Density")
         ax.xaxis.set_ticks(np.arange(0, d_lim[1], 10))
         ax.yaxis.set_ticks(np.arange(0, d_lim[3], 0.005))
+        ax.grid(False)
     # plt.legend();
     plt.xlim(d_lim[0], d_lim[1])
     plt.ylim(d_lim[2], d_lim[3])
-    ax.grid(False)
     # plt.title('Movement Distribution')
     figManager = plt.get_current_fig_manager()
     if hasattr(figManager, "window"):
         figManager.window.showMaximized()
-    makedirs(output, exist_ok=True)
     fig10.savefig(path.join(output, TaskNo + " Displacement.tiff"))  # Fig10
 
 
@@ -371,7 +353,7 @@ def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp, outp
     )
 
     # Store statistical analysis result (both A. and B.) into .csv file
-    writecsv(output, TaskNo + " StatDetail.csv", res)  # File5
+    write_csv(output, TaskNo + " StatDetail.csv", res)  # File5
 
 
 def run(
@@ -431,7 +413,7 @@ def run(
         x_lim,
         fig_size_w,
         fig_size_h,
-        output
+        output,
     )
     fig10(
         name,
@@ -441,135 +423,6 @@ def run(
         d_lim,
         fig_size_w,
         fig_size_h,
-        output
+        output,
     )
     statresult(name, group_labels, Group_speed, Group_displacement, dict_grp, output)
-
-
-# Execute Genetic Dataset
-def run_genetic():
-    TaskNo = "18_4_22 Genetic Result"
-    Grplabel = ["SKD1", "Control"]
-    Lst_of_Fields = [
-        [
-            "SKD1_1 result.csv",
-            "SKD1_2 result.csv",
-            "SKD1_4 result.csv",
-            "SKD1_6 result.csv",
-            "SKD1_7 result.csv",
-            "SKD1_8 result.csv",
-        ],
-        [
-            "Control_4 result.csv",
-            "Control_5 result.csv",
-            "Control_6 result.csv",
-            "Control_7 result.csv",
-        ],
-    ]
-
-    boolen = False  # True for biological dataset, false for else, #True for biological dataset, false for else, boolen = True is 3 comparison, boolen = False is 2 comparison
-
-    # Outputsetting
-    FigSizeW = 10  # In inches
-    FigSizeH = 10  # In inches
-    x_lim = [0, 1.2, 0, 9.0]
-    d_lim = [0, 250, 0, 0.05]
-    t_lim = [0, 2.5]
-
-    run(
-        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
-    )
-
-
-# Execute Chemical SIT Dataset
-def run_chemical_sit():
-    TaskNo = "18_4_2022 Chemical Sitaxentan Result"
-    Grplabel = ["Sitaxentan", "Control"]  # Note: len(Grplabel)=len(Lst_of_Fields)
-    Lst_of_Fields = [
-        [
-            "Sitaxentan1a result",
-            "Sitaxentan1b result",
-            "Sitaxentan1c result",
-            "Sitaxentan1d result",
-            "Sitaxentan2b result",
-            "Sitaxentan2c result",
-            "Sitaxentan2d result",
-        ],
-        [
-            "SitaxentanControl1a result",
-            "SitaxentanControl1b result",
-            "SitaxentanControl1c result",
-            "SitaxentanControl1d result",
-        ],
-    ]
-
-    boolen = False  # True for biological dataset, false for else
-
-    # Outputsetting
-    FigSizeW = 10  # In inches
-    FigSizeH = 10  # In inches
-    x_lim = [0, 1.2, 0, 9.0]
-    d_lim = [0, 250, 0, 0.05]
-    t_lim = [0, 2.5]
-
-    run(
-        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
-    )
-
-
-# Execute Chemical TGZ Dataset
-def run_chemical_tgz():
-    TaskNo = "18_4_2022 Chemical Troglitazone Result"
-    Grplabel = ["Troglitazone", "Control"]  # Note: len(Grplabel)=len(Systemlst)
-    Lst_of_Fields = [
-        ["Trog1a result", "Trog1b result", "Trog1c result"],
-        [
-            "TrogControl1a result",
-            "TrogControl1b result",
-            "TrogControl1c result",
-            "TrogControl1d result",
-            "TrogControl1e result",
-            "TrogControl1f result",
-        ],
-    ]
-
-    boolen = False  # True for biological dataset, false for else
-
-    # Outputsetting
-    FigSizeW = 10  # In inches
-    FigSizeH = 10  # In inches
-    x_lim = [0, 1.2, 0, 9.0]
-    d_lim = [0, 250, 0, 0.05]
-    t_lim = [0, 2.5]
-
-    run(
-        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
-    )
-
-
-# Execute Biological Dataset
-def run_biological():
-    TaskNo = "18_4_2022 Biological Result"
-    Grplabel = ["S4", "O65", "Control"]  # Note: len(Grplabel)=len(Systemlst)
-    Lst_of_Fields = [
-        ["S4_2 result", "S4 result"],
-        ["O65_2 result", "O65 result"],
-        ["Control_2 result", "Control_3 result"],
-    ]
-
-    boolen = True  # True for biological dataset, false for else, boolen = True is 3 comparison, boolen = False is 2 comparison
-
-    # Outputsetting
-    FigSizeW = 10  # In inches
-    FigSizeH = 10  # In inches
-    x_lim = [0, 1.2, 0, 9.0]
-    d_lim = [0, 250, 0, 0.05]
-    t_lim = [0, 2.5]
-
-    run(
-        TaskNo, Grplabel, Lst_of_Fields, boolen, x_lim, d_lim, t_lim, FigSizeW, FigSizeH
-    )
-
-
-if __name__ == "__main__":
-    run_genetic()

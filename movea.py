@@ -205,14 +205,37 @@ def Signal_detection(
 
     # Save the RGB filtered raw data in csv format
     write_csv(output_dir, output_name + ".csv", lstofcoordinate)
-    Fig0(lstofcoordinate, len(timestamps_with_slices), timelap, txpixel, typixel, dimension_perpixel, output_name=output_name)
-    Fig1(lstofcoordinate, len(timestamps_with_slices), timelap, txpixel, typixel, dimension_perpixel, output_name=output_name)
+    Fig0(
+        lstofcoordinate,
+        len(timestamps_with_slices),
+        timelap,
+        txpixel,
+        typixel,
+        dimension_perpixel,
+        output_name=output_name,
+    )
+    Fig1(
+        lstofcoordinate,
+        len(timestamps_with_slices),
+        timelap,
+        txpixel,
+        typixel,
+        dimension_perpixel,
+        output_name=output_name,
+    )
 
     return lstofcoordinate
 
 
 def Fig0(
-    rawdata, totaltime, timelap, txpixel, typixel, dimension_perpixel, output_name, output_dir: str = "."
+    rawdata,
+    totaltime,
+    timelap,
+    txpixel,
+    typixel,
+    dimension_perpixel,
+    output_name,
+    output_dir: str = ".",
 ):
     # Convert RGB filtered raw data into correct format
     convertlst = csvtodata(rawdata)
@@ -255,7 +278,14 @@ def Fig0(
 
 
 def Fig1(
-    rawdata, totaltime, timelap, txpixel, typixel, dimension_perpixel, output_name, output_dir: str = "."
+    rawdata,
+    totaltime,
+    timelap,
+    txpixel,
+    typixel,
+    dimension_perpixel,
+    output_name,
+    output_dir: str = ".",
 ):  # raw data XY view
     # Convert RGB filtered raw data into correct format
     convertlst = csvtodata(rawdata)
@@ -360,7 +390,17 @@ def optimal_eps(name, convertlst, min_sig):
     return epsilon_auto
 
 
-def clustering(input_file, output_dir, output_name, epsilon, min_sig, is_auto_eps, txpixel, typixel, dimension_perpixel):
+def clustering(
+    input_file,
+    output_dir,
+    output_name,
+    epsilon,
+    min_sig,
+    is_auto_eps,
+    txpixel,
+    typixel,
+    dimension_perpixel,
+):
     # Retrieve raw coordination data from saved csv file and Convert the raw coordination data from excel into correct format
     file = read_csv(input_file)
     convertlst = csvtodata(file)
@@ -450,10 +490,66 @@ MOVEMENT CALCULATION
 """
 
 
-def LoadData(name):
+def movement(
+    input_raw,
+    input_clustering,
+    output_dir,
+    Thres1,
+    Thres2,
+    Thres3,
+    Thres4,
+    min_frame,
+    dimension_perpixel,
+    interval_time,
+    totaltime,
+    timelap,
+    txpixel,
+    typixel,
+    auto_calc=True,
+):
+    sorted_convertlst, sorted_class = LoadData(input_raw, input_clustering)
+    cluster_range = [Thres2, Thres1]
+    (
+        all_cluster_centers,
+        lst_cluster_centers,
+        filtered_cluster_coord,
+    ) = CalcClusterCenter(
+        sorted_convertlst, sorted_class, cluster_range, output_dir, boolen=auto_calc
+    )
+    initial_cluster = InitialCluster(all_cluster_centers, Thres4)
+    initial_cluster = LinkingCluster(
+        initial_cluster, lst_cluster_centers, Thres3, Thres4
+    )
+    (
+        all_cluster_centers,
+        clustering_name,
+        lst_of_distance,
+        dic_speed,
+        dic_distance,
+        lst_of_speed,
+    ) = CalcSpeedDisplacement(
+        initial_cluster, min_frame, dimension_perpixel, interval_time, output_dir
+    )
+    PlotMovement(
+        output_dir,
+        filtered_cluster_coord,
+        all_cluster_centers,
+        clustering_name,
+        dic_speed,
+        dic_distance,
+        totaltime,
+        timelap,
+        txpixel,
+        typixel,
+        dimension_perpixel,
+    )
+    Spectrum(output_dir, lst_of_distance, lst_of_speed)
+
+
+def LoadData(input_raw, input_clustering):
     # Retrieve both coordination and clustering data -> convert to correct format
-    file_detection = read_csv(name + ".csv")  # retrieve
-    file_clustering = read_csv(name + "_clustering.csv")
+    file_detection = read_csv(input_raw)  # retrieve
+    file_clustering = read_csv(input_clustering)
     reslst = []
     for res in file_clustering:
         reslst.append([int(item) for item in res])
@@ -516,7 +612,9 @@ def OptimalCluster_range(Sorted_class, name):
     return Cluster_range, Count_clusterID_dict
 
 
-def CalcClusterCenter(Sorted_convertlst, Sorted_class, Cluster_range, boolen, name):
+def CalcClusterCenter(
+    Sorted_convertlst, Sorted_class, Cluster_range, name, boolen=True
+):
     # 2nd filtering: filtered out the large cluster (static) and small cluster (noise) based on Cluster_range (Recommend 70_15_30 the better)
     Filter_coord = []
     Filter_clusterID = []

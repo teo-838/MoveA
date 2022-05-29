@@ -495,11 +495,11 @@ def movement(
     input_clustering,
     min_signals,
     max_signals,
-    Thres3,
-    Thres4,
+    min_range,
+    max_range,
     min_frame,
     dimension_perpixel,
-    interval_time,
+    speed_time,
     totaltime,
     txpixel,
     typixel,
@@ -508,6 +508,9 @@ def movement(
     auto_calc=True,
     timelap: int = 1,
 ):
+    interval_time = speed_time / totaltime
+    Thres3 = min_range / dimension_perpixel / interval_time
+    Thres4 = max_range / dimension_perpixel / interval_time
     sorted_convertlst, sorted_class = LoadData(input_raw, input_clustering)
     cluster_range = [min_signals, max_signals]
     (
@@ -1149,7 +1152,9 @@ def PlotMovement(
     if hasattr(figManager, "window"):
         figManager.window.showMaximized()
 
-    fig4.savefig(path.join(output_dir, output_name + "_4.tiff"))  # Merge Raw Data with Movement
+    fig4.savefig(
+        path.join(output_dir, output_name + "_4.tiff")
+    )  # Merge Raw Data with Movement
 
     # Setup the plotting framework for subplot c. Specific Cluster Display
     fig5 = plt.figure(figsize=FIGSIZE)
@@ -1262,4 +1267,6 @@ def Spectrum(lst_of_distance, lst_of_speed, output_dir, output_name):
     if hasattr(figManager, "window"):
         figManager.window.showMaximized()
 
-    fig7.savefig(path.join(output_dir, output_name + "_7.tiff"))  # Fig7 Displacement Spectrum
+    fig7.savefig(
+        path.join(output_dir, output_name + "_7.tiff")
+    )  # Fig7 Displacement Spectrum

@@ -52,7 +52,7 @@ class Annotation3D(Annotation):
 
     def draw(self, renderer):
         x, y, z = self._xyz
-        x2, y2, _ = proj_transform(x, y, z, renderer.M)
+        x2, y2, _ = proj_transform(x, y, z, self.axes.M)
         self.xy = (x2, y2)
         super().draw(renderer)
 
@@ -76,7 +76,7 @@ class Arrow3D(FancyArrowPatch):
         x1, y1, z1 = self._xyz
         dx, dy, dz = self._dxdydz
         x2, y2, z2 = (x1 + dx, y1 + dy, z1 + dz)
-        xs, ys, _ = proj_transform((x1, x2), (y1, y2), (z1, z2), renderer.M)
+        xs, ys, _ = proj_transform((x1, x2), (y1, y2), (z1, z2), self.axes.M)
         self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
         super().draw(renderer)
 
@@ -157,8 +157,8 @@ def Signal_detection(
     timestamps_with_slices: List[Tuple[str, List[str]]],
     dimension_x: float,
     dimension_deltaz: float,
-    output_dir: str,
     output_name: str,
+    output_dir: str,
     timelap: int = 1,
     ThresRGB: Tuple[int, int, int] = (255, 100, 0),
     ChannelSwitch: Tuple[int, int, int] = (0, 1, 0),
@@ -205,26 +205,29 @@ def Signal_detection(
 
     # Save the RGB filtered raw data in csv format
     write_csv(output_dir, output_name + ".csv", lstofcoordinate)
+    raw_data = read_csv(path.join(output_dir, output_name + ".csv"))
     Fig0(
-        lstofcoordinate,
+        raw_data,
         len(timestamps_with_slices),
         timelap,
         txpixel,
         typixel,
         dimension_perpixel,
         output_name=output_name,
+        output_dir=output_dir,
     )
     Fig1(
-        lstofcoordinate,
+        raw_data,
         len(timestamps_with_slices),
         timelap,
         txpixel,
         typixel,
         dimension_perpixel,
         output_name=output_name,
+        output_dir=output_dir,
     )
 
-    return lstofcoordinate
+    return txpixel, typixel
 
 
 def Fig0(
@@ -271,8 +274,8 @@ def Fig0(
     ax.zaxis._axinfo["grid"]["color"] = (1, 1, 1, 0)
     # ax.view_init(azim=-90, elev=-90)
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
 
     fig0.savefig(path.join(output_dir, output_name + "_0.tiff"))
 
@@ -322,10 +325,10 @@ def Fig1(
     ax.zaxis._axinfo["grid"]["color"] = (1, 1, 1, 0)
     # plt.zticks([])
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
     # cbar = plt.colorbar()
     # cbar.set_label('Color Intensity')
-    plt.show()
 
     fig1.savefig(path.join(output_dir, output_name + "_1.tiff"))
 
@@ -372,7 +375,6 @@ def optimal_eps(name, convertlst, min_sig):
         # kneedle.plot_knee()
     ax.set_ylabel("K-NN Distance")
     ax.set_xlabel("Points sorted by distance (" + name + ")")
-    plt.show()
     figd.savefig(name + "_kdist.tiff")
 
     # Plot the distribution of all Eps values (for all time points t0 to t-end)
@@ -381,12 +383,10 @@ def optimal_eps(name, convertlst, min_sig):
     ax.set_ylabel("eps")
     ax.set_xlabel(name)
     plt.boxplot(lsteps)
-    plt.show()
     figeps.savefig(name + "_eps.tiff")
 
     # The optimal Eps is the median of all Eps values (for all time points t0 to t-end)
     epsilon_auto = np.median(lsteps)
-    print(epsilon_auto)
     return epsilon_auto
 
 
@@ -470,8 +470,8 @@ def clustering(
     ax.zaxis._axinfo["grid"]["color"] = (1, 1, 1, 0)
     ax.set_ylim(ax.get_ylim()[::-1])
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
     fig2.savefig(path.join(output_dir, output_name + "_2.tiff"))  # Fig2 clustering 3D
     ax.set_zticks([])
     ax.set_ylim(ax.get_ylim()[::-1])
@@ -493,28 +493,34 @@ MOVEMENT CALCULATION
 def movement(
     input_raw,
     input_clustering,
-    output_dir,
-    Thres1,
-    Thres2,
+    min_signals,
+    max_signals,
     Thres3,
     Thres4,
     min_frame,
     dimension_perpixel,
     interval_time,
     totaltime,
-    timelap,
     txpixel,
     typixel,
+    output_dir,
+    output_name,
     auto_calc=True,
+    timelap: int = 1,
 ):
     sorted_convertlst, sorted_class = LoadData(input_raw, input_clustering)
-    cluster_range = [Thres2, Thres1]
+    cluster_range = [min_signals, max_signals]
     (
         all_cluster_centers,
         lst_cluster_centers,
         filtered_cluster_coord,
     ) = CalcClusterCenter(
-        sorted_convertlst, sorted_class, cluster_range, output_dir, boolen=auto_calc
+        sorted_convertlst,
+        sorted_class,
+        cluster_range,
+        output_dir,
+        output_name,
+        boolen=auto_calc,
     )
     initial_cluster = InitialCluster(all_cluster_centers, Thres4)
     initial_cluster = LinkingCluster(
@@ -528,10 +534,14 @@ def movement(
         dic_distance,
         lst_of_speed,
     ) = CalcSpeedDisplacement(
-        initial_cluster, min_frame, dimension_perpixel, interval_time, output_dir
+        initial_cluster,
+        min_frame,
+        dimension_perpixel,
+        interval_time,
+        output_dir,
+        output_name,
     )
     PlotMovement(
-        output_dir,
         filtered_cluster_coord,
         all_cluster_centers,
         clustering_name,
@@ -542,8 +552,10 @@ def movement(
         txpixel,
         typixel,
         dimension_perpixel,
+        output_dir,
+        output_name,
     )
-    Spectrum(output_dir, lst_of_distance, lst_of_speed)
+    Spectrum(lst_of_distance, lst_of_speed, output_dir, output_name)
 
 
 def LoadData(input_raw, input_clustering):
@@ -606,14 +618,13 @@ def OptimalCluster_range(Sorted_class, name):
     ax = figclusterN.add_subplot()
     plt.boxplot(lstdistribution)
     ax.set(xlabel=name, ylabel="Number of signals in cluster")
-    plt.show()
     figclusterN.savefig(name + "_clusterdistribution.tiff")
 
     return Cluster_range, Count_clusterID_dict
 
 
 def CalcClusterCenter(
-    Sorted_convertlst, Sorted_class, Cluster_range, name, boolen=True
+    Sorted_convertlst, Sorted_class, Cluster_range, output_dir, output_name, boolen=True
 ):
     # 2nd filtering: filtered out the large cluster (static) and small cluster (noise) based on Cluster_range (Recommend 70_15_30 the better)
     Filter_coord = []
@@ -621,9 +632,11 @@ def CalcClusterCenter(
 
     # Calculate Cluster_range if boolen == True
     if boolen:
-        Cluster_range, Count_clusterID_dict = OptimalCluster_range(Sorted_class, name)
+        Cluster_range, Count_clusterID_dict = OptimalCluster_range(
+            Sorted_class, output_name
+        )
     else:
-        _, Count_clusterID_dict = OptimalCluster_range(Sorted_class, name)
+        _, Count_clusterID_dict = OptimalCluster_range(Sorted_class, output_name)
 
     for i in range(len(Sorted_convertlst)):
         Coord = []
@@ -675,7 +688,7 @@ def CalcClusterCenter(
         Lst_Cluster_Centers.append(cur_cluster_centers)
 
     write_csv(
-        ".", name + "_validation_XYZ.csv", Flatten_Cluster_Points
+        output_dir, output_name + "_validation_XYZ.csv", Flatten_Cluster_Points
     )  # To validate different Z-slices are clustered together instead of each Z-slice is one cluster by calculating the variation of Z-position and visualize each cluster seperately
 
     # Convert the lst_Cluster_Centers [[[Center]]] into Tuple [((Center,),)]
@@ -778,7 +791,12 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
 
 
 def CalcSpeedDisplacement(
-    InitialClusters, Min_Frame, dimension_perpixel, Interval_time, name
+    InitialClusters,
+    Min_Frame,
+    dimension_perpixel,
+    Interval_time,
+    output_dir,
+    output_name,
 ):
     # Movement Calc.
     All_Tracks = InitialClusters
@@ -912,7 +930,7 @@ def CalcSpeedDisplacement(
     )  # Print4
 
     # Save as .csv file
-    write_csv(".", name + " result.csv", Final_Result)  # File3
+    write_csv(output_dir, output_name + "_result.csv", Final_Result)  # File3
 
     return (
         All_Cluster_Centers,
@@ -925,7 +943,6 @@ def CalcSpeedDisplacement(
 
 
 def PlotMovement(
-    name,
     Filtered_Cluster_Coord,
     All_Cluster_Centers,
     clustering_name,
@@ -936,6 +953,8 @@ def PlotMovement(
     txpixel,
     typixel,
     dimension_perpixel,
+    output_dir,
+    output_name,
     highlightedClusters={},
 ):
     # Regenerate the color code to represent the t-axis
@@ -1031,10 +1050,10 @@ def PlotMovement(
     ax.grid(False)
     ax.set_zticks([])
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
 
-    fig3.savefig(name + "_3.tiff")  # Movement Display
+    fig3.savefig(path.join(output_dir, output_name + "_3.tiff"))  # Movement Display
 
     # Setup the plotting framework for subplot b. Merge Raw Data with Movement
     fig4 = plt.figure(figsize=FIGSIZE)
@@ -1127,10 +1146,10 @@ def PlotMovement(
     ax.grid(False)
     ax.set_zticks([])
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
 
-    fig4.savefig(name + "_4.tiff")  # Merge Raw Data with Movement
+    fig4.savefig(path.join(output_dir, output_name + "_4.tiff"))  # Merge Raw Data with Movement
 
     # Setup the plotting framework for subplot c. Specific Cluster Display
     fig5 = plt.figure(figsize=FIGSIZE)
@@ -1209,18 +1228,16 @@ def PlotMovement(
     ax.grid(False)
     ax.set_zticks([])
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
 
-    fig5.savefig(name + "_5.tiff")  # Specific Cluster
-
-    print("Complete")
+    fig5.savefig(path.join(output_dir, output_name + "_5.tiff"))  # Specific Cluster
 
 
-def Spectrum(name, lst_of_distance, lst_of_speed):
+def Spectrum(lst_of_distance, lst_of_speed, output_dir, output_name):
     # Speed Spectrum
     fig6 = plt.figure(figsize=FIGSIZE)
-    Label = "MoveA " + name
+    Label = "MoveA " + output_name
     df_distance = pd.DataFrame(np.array(lst_of_speed), columns=[Label])
     # print(df_distance)
     ax = sns.kdeplot(data=df_distance)
@@ -1228,21 +1245,21 @@ def Spectrum(name, lst_of_distance, lst_of_speed):
     # plt.legend();
     plt.title("Speed Spectrum")
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
 
-    fig6.savefig(name + "_6.tiff")  # Fig6 Speed Spectrum
+    fig6.savefig(path.join(output_dir, output_name + "_6.tiff"))  # Fig6 Speed Spectrum
 
     # Displacement Spectrum
     fig7 = plt.figure(figsize=FIGSIZE)
-    Label = "MoveA " + name
+    Label = "MoveA " + output_name
     df_distance = pd.DataFrame(np.array(lst_of_distance), columns=[Label])
     ax = sns.kdeplot(data=df_distance)
     ax.set(xlabel="Displacement (µm)", ylabel="Density")
     # plt.legend();
     plt.title("Displacement Spectrum")
     figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
-    plt.show()
+    if hasattr(figManager, "window"):
+        figManager.window.showMaximized()
 
-    fig7.savefig(name + "_7.tiff")  # Fig7 Displacement Spectrum
+    fig7.savefig(path.join(output_dir, output_name + "_7.tiff"))  # Fig7 Displacement Spectrum

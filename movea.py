@@ -338,7 +338,7 @@ Clustering
 """
 
 
-def optimal_eps(name, convertlst, min_sig):
+def optimal_eps(name, convertlst, min_sig, output_dir='.'):
     # Initialize
     lsteps = []
     lstelbow = []
@@ -375,7 +375,7 @@ def optimal_eps(name, convertlst, min_sig):
         # kneedle.plot_knee()
     ax.set_ylabel("K-NN Distance")
     ax.set_xlabel("Points sorted by distance (" + name + ")")
-    figd.savefig(name + "_kdist.tiff")
+    figd.savefig(path.join(output_dir, name + "_kdist.tiff"))
 
     # Plot the distribution of all Eps values (for all time points t0 to t-end)
     figeps = plt.figure(figsize=(2.5, 10))
@@ -383,7 +383,7 @@ def optimal_eps(name, convertlst, min_sig):
     ax.set_ylabel("eps")
     ax.set_xlabel(name)
     plt.boxplot(lsteps)
-    figeps.savefig(name + "_eps.tiff")
+    figeps.savefig(path.join(output_dir, name + "_eps.tiff"))
 
     # The optimal Eps is the median of all Eps values (for all time points t0 to t-end)
     epsilon_auto = np.median(lsteps)
@@ -407,7 +407,7 @@ def clustering(
     reslst = []
     if is_auto_eps:
         # If True, use automatically calculated Eps, if false, manually input Eps
-        epsilon = optimal_eps(output_name, convertlst, min_sig)
+        epsilon = optimal_eps(output_name, convertlst, min_sig, output_dir)
 
     # Setup ploting plateform to plot clustering result
     fig2 = plt.figure(figsize=FIGSIZE)
@@ -590,7 +590,7 @@ def LoadData(input_raw, input_clustering):
     return Sorted_convertlst, Sorted_class
 
 
-def OptimalCluster_range(Sorted_class, name):
+def OptimalCluster_range(Sorted_class, name, output_dir='.'):
     # Automatically calculated Cluster_range
     # Count number of signals in each cluster
     Count_clusterID_dict = []
@@ -621,7 +621,7 @@ def OptimalCluster_range(Sorted_class, name):
     ax = figclusterN.add_subplot()
     plt.boxplot(lstdistribution)
     ax.set(xlabel=name, ylabel="Number of signals in cluster")
-    figclusterN.savefig(name + "_clusterdistribution.tiff")
+    figclusterN.savefig(path.join(output_dir, name + "_clusterdistribution.tiff"))
 
     return Cluster_range, Count_clusterID_dict
 
@@ -636,10 +636,10 @@ def CalcClusterCenter(
     # Calculate Cluster_range if boolen == True
     if boolen:
         Cluster_range, Count_clusterID_dict = OptimalCluster_range(
-            Sorted_class, output_name
+            Sorted_class, output_name, output_dir
         )
     else:
-        _, Count_clusterID_dict = OptimalCluster_range(Sorted_class, output_name)
+        _, Count_clusterID_dict = OptimalCluster_range(Sorted_class, output_name, output_dir)
 
     for i in range(len(Sorted_convertlst)):
         Coord = []

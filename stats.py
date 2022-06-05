@@ -108,7 +108,7 @@ def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim, output="."):
     y = "Speed (µm/s)"
     order = Grplabel
     if boolen:
-        my_pal = {"S4": Treatment_color, "O65": O65_color, "Control": Control_color}
+        my_pal = [Treatment_color, Control_color, O65_color]
         sns.boxplot(
             data=df, x=x, y=y, order=order, palette=my_pal
         )  # Boxplot using DataFrame
@@ -308,7 +308,7 @@ def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp, outp
     for u, v in keys:
         statistic, pvalue = stat.ttest_ind(dict_grp[u], dict_grp[v], equal_var=False)
         statistic_res = unequal_var_t(dict_grp[u], dict_grp[v], 0, 0.05)
-        print(round(statistic_res[-5], 4) == round(statistic, 4))
+        # print(round(statistic_res[-5], 4) == round(statistic, 4))
         statistic_res[-3] = pvalue
         statistic_res[-5] = statistic
         res.append([u + " (Treatment) vs. " + v + " (Control)"] + statistic_res)

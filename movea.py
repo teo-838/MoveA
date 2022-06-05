@@ -544,6 +544,7 @@ def movement(
         output_dir,
         output_name,
     )
+    write_csv(output_dir, output_name + ".csv", all_cluster_centers)
     PlotMovement(
         filtered_cluster_coord,
         all_cluster_centers,
@@ -933,7 +934,7 @@ def CalcSpeedDisplacement(
     )  # Print4
 
     # Save as .csv file
-    write_csv(output_dir, output_name + ".csv", Final_Result)  # File3
+    write_csv(output_dir, output_name + "_result.csv", Final_Result)  # File3
 
     return (
         All_Cluster_Centers,

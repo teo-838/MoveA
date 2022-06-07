@@ -133,7 +133,7 @@ def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim, output="."):
     ax.yaxis.set_ticks(np.arange(0, t_lim[1], 0.5))
     plt.ylim(t_lim[0], t_lim[1])
     ax.grid(False)
-    fig8.savefig(path.join(output, TaskNo + "_t-test_welch.tiff"))  # Fig8
+    fig8.savefig(path.join(output, TaskNo + "_t-test_welch.png"))  # Fig8
 
 
 def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH, output="."):
@@ -178,7 +178,7 @@ def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH, outpu
     figManager = plt.get_current_fig_manager()
     if hasattr(figManager, "window"):
         figManager.window.showMaximized()
-    fig9.savefig(path.join(output, TaskNo + "_Speed.tiff"))  # Fig9
+    fig9.savefig(path.join(output, TaskNo + "_speed.png"))  # Fig9
 
 
 def fig10(
@@ -227,7 +227,7 @@ def fig10(
     figManager = plt.get_current_fig_manager()
     if hasattr(figManager, "window"):
         figManager.window.showMaximized()
-    fig10.savefig(path.join(output, TaskNo + "_Displacement.tiff"))  # Fig10
+    fig10.savefig(path.join(output, TaskNo + "_displacement.png"))  # Fig10
 
 
 def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp, output="."):
@@ -352,7 +352,7 @@ def statresult(TaskNo, Grplabel, Group_speed, Group_displacement, dict_grp, outp
     )
 
     # Store statistical analysis result (both A. and B.) into .csv file
-    write_csv(output, TaskNo + "_StatDetail.csv", res)  # File5
+    write_csv(output, TaskNo + "_stats.csv", res)  # File5
 
 
 def run(

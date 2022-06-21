@@ -509,8 +509,8 @@ def movement(
     timelap: int = 1,
 ):
     interval_time = speed_time / totaltime
-    Thres3 = min_range / dimension_perpixel / interval_time
-    Thres4 = max_range / dimension_perpixel / interval_time
+    Thres3 = min_range / dimension_perpixel * interval_time
+    Thres4 = max_range / dimension_perpixel * interval_time
     sorted_convertlst, sorted_class = LoadData(input_raw, input_clustering)
     cluster_range = [min_signals, max_signals]
     (
@@ -715,18 +715,14 @@ def InitialCluster(All_Cluster_Centers, Thres4):
     initialcluster.append(list(All_Cluster_Centers[0]))  # t0 all are initial clusters
     for _ in range(len(All_Cluster_Centers)):  # Loop each time point (t=x)
         not_initialcluster = set()
-        while (
-            idx != len(All_Cluster_Centers) - 2
-        ):  # -2 instead of -1 because we compare between two time lapses, those last time lapse can't compare with any, -1 because idx count from 0
-            for firstcluster in All_Cluster_Centers[
-                idx
-            ]:  # Loop each cluster in the time point (t=x)
-                for secondcluster in All_Cluster_Centers[
-                    idx + 1
-                ]:  # Loop each cluster in the time point (t=x+1)
-                    if (
-                        distance(firstcluster, secondcluster) <= Thres4
-                    ):  # identified not_intitialcluster if a cluster has a distance smaller/equal to the maximum moving distance with another cluster in next time lapse
+        # -2 instead of -1 because we compare between two time lapses, those last time lapse can't compare with any, -1 because idx count from 0
+        while (idx != len(All_Cluster_Centers) - 2):
+            # Loop each cluster in the time point (t=x)
+            for firstcluster in All_Cluster_Centers[idx]:
+                # Loop each cluster in the time point (t=x+1)
+                for secondcluster in All_Cluster_Centers[idx + 1]:
+                    # identified not_intitialcluster if a cluster has a distance smaller/equal to the maximum moving distance with another cluster in next time lapse
+                    if (distance(firstcluster, secondcluster) <= Thres4):
                         not_initialcluster.add(tuple(secondcluster))
             Clusters_t2 = set(All_Cluster_Centers[idx + 1])
             Initialcluster_t2 = Clusters_t2 - not_initialcluster
@@ -743,26 +739,20 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
     # Mapping the movement of the clusters.
     # Map the centre of the cluster X (time point t0) to the centre of the cluster Y (time point t1), Mapping criteria (shortest movement require from one cluster to another cluster)
     # Thres4: The maximum valid moving distance from cluster X (time point t0) and Y (time point t1), beyond the threshold consider the movement as mismatched
-    InitialClusters = (
-        initialcluster.copy()
-    )  # InitialClusters is the list with every initial clusters in each initial time points
-    for timet0 in range(
-        len(InitialClusters)
-    ):  # Loop each time point (initial time points)
-        for clustert0 in range(
-            len(InitialClusters[timet0])
-        ):  # Loop each initial cluster in the time point
-            for timet1 in range(
-                timet0 + 1, len(Lst_Cluster_Centers)
-            ):  # Loop each time points (t initial +1 till the end) after initial time point
-                current_cluster = InitialClusters[timet0][clustert0][
-                    -1
-                ]  # Current cluster: current most updated cluster (t<n>)for the specific initial cluster (t0)
-                OptimalLinking = [
-                    float("inf"),
-                    None,
-                ]  # Initialize a list to store ([the distance, the cluster index]) the cluster (t<n+1>) which have the shortest distance w.r.t current most updated cluster (t<n>)
-                clusters_t2 = Lst_Cluster_Centers[timet1]  # Cluster for KNN
+    # InitialClusters is the list with every initial clusters in each initial time points
+    InitialClusters = (initialcluster.copy())
+    # Loop each time point (initial time points)
+    for timet0 in range(len(InitialClusters)):
+        # Loop each initial cluster in the time point
+        for clustert0 in range(len(InitialClusters[timet0])):
+            # Loop each time points (t initial +1 till the end) after initial time point
+            for timet1 in range(timet0 + 1, len(Lst_Cluster_Centers)):
+                # Current cluster: current most updated cluster (t<n>)for the specific initial cluster (t0)
+                current_cluster = InitialClusters[timet0][clustert0][-1]
+                # Initialize a list to store ([the distance, the cluster index]) the cluster (t<n+1>) which have the shortest distance w.r.t current most updated cluster (t<n>)
+                OptimalLinking = [float("inf"), None]
+                # Cluster for KNN
+                clusters_t2 = Lst_Cluster_Centers[timet1]
                 neigh = NearestNeighbors()
                 neigh.fit(clusters_t2)
                 OptimalLinking[0], OptimalLinking[1] = neigh.kneighbors(
@@ -772,9 +762,8 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
                     OptimalLinking[0][0][0],
                     OptimalLinking[1][0][0],
                 )
-                while (
-                    OptimalLinking[0] < Thres3
-                ):  # If nearest cluster distance smaller than Thres3 (noise), remove the nearest cluster and recalculated
+                # If nearest cluster distance smaller than Thres3 (noise), remove the nearest cluster and recalculated
+                while (OptimalLinking[0] < Thres3):
                     clusters_t2.remove(clusters_t2[OptimalLinking[1]])
                     neigh = NearestNeighbors()
                     neigh.fit(clusters_t2)
@@ -785,12 +774,9 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
                         OptimalLinking[0][0][0],
                         OptimalLinking[1][0][0],
                     )
-                if (
-                    OptimalLinking[0] <= Thres4
-                ):  # If nearest cluster distance smaller than/equal to Thres4 (acceptable moving distance), stored this nearest cluster (t<x+1>) as optimal linked cluster for the current_cluster (t<x>)
-                    InitialClusters[timet0][clustert0].append(
-                        tuple(clusters_t2[OptimalLinking[1]])
-                    )
+                # If nearest cluster distance smaller than/equal to Thres4 (acceptable moving distance), stored this nearest cluster (t<x+1>) as optimal linked cluster for the current_cluster (t<x>)
+                if (OptimalLinking[0] <= Thres4):
+                    InitialClusters[timet0][clustert0].append(tuple(clusters_t2[OptimalLinking[1]]))
     return InitialClusters
 
 
@@ -809,9 +795,8 @@ def CalcSpeedDisplacement(
     timeframe = []  # Number of time lapses respective to each track
     for Tracks in All_Tracks:
         for single_Track in Tracks:
-            if (
-                len(single_Track) >= Min_Frame
-            ):  # Not only initial cluster and moving time lapse larger than/equal to Min_Frame
+            # Not only initial cluster and moving time lapse larger than/equal to Min_Frame
+            if (len(single_Track) >= Min_Frame):  
                 Compile_lst.append(single_Track)
                 timeframe.append(len(single_Track))
     ##################################
@@ -823,20 +808,20 @@ def CalcSpeedDisplacement(
     for j in range(len(All_Tracks)):  # Loop each track
         cur_distance = []
         cur_speed = []
-        for i in range(
-            1, len(All_Tracks[j])
-        ):  # Loop each time lapse in each track, start from 1 because of the i-1
-            cur_distance.append(
-                distance(All_Tracks[j][i - 1], All_Tracks[j][i]) * dimension_perpixel
-            )  # Convert movement (in pixel) into movement (in µm)
-            cur_speed.append(
-                distance(All_Tracks[j][i - 1], All_Tracks[j][i])
-                * dimension_perpixel
-                / Interval_time
-            )  # Convert speed (in pixel/s) into speed (in µm/s)
+        #Loop each time lapse in each track, start from 1 because of the i-1
+        for i in range(1,len(All_Tracks[j])):
+            #Convert movement (in pixel) into movement (in µm)
+            dist = distance(All_Tracks[j][i-1],All_Tracks[j][i])*dimension_perpixel
+            cur_distance.append(dist)
+            #Convert speed (in pixel/s) into speed (in µm/s)
+            spd = dist/Interval_time
+            cur_speed.append(spd)
+
+            if j < 2 and i < 5:
+                print("distance: ", dist, " speed: ", spd)
         lstdistance.append(sum(cur_distance))
         lstofspeed.append(np.average(cur_speed))
-        lstframe.append(len(cur_speed))
+        lstframe.append(len(cur_speed)) 
 
     # Store the movement and speed into dictionaries (format: key of dictionary = label of the cluster, value of dictionary = movement of the cluster)
     dic_distance = {}

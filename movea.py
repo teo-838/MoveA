@@ -606,14 +606,11 @@ def OptimalCluster_range(Sorted_class, name, output_dir="."):
     # Calculated outlier cluster w.r.t number of signals
     from scipy.stats import iqr
 
-    Q1 = np.percentile(lstdistribution, 25)
     Q3 = np.percentile(lstdistribution, 75)
-    # Q2 = np.median(lstdistribution)
-    # ThresAve = np.average(lstdistribution)
     RangeIQR = iqr(lstdistribution, axis=0)
-
-    Thres2 = Q1 - 1.5 * RangeIQR
+    Thres2 = np.percentile(lstdistribution, 25)
     Thres1 = Q3 + 1.5 * RangeIQR
+
     Cluster_range = [Thres2, Thres1]
 
     # Boxplot: the number of signals for each cluster

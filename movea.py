@@ -8,7 +8,7 @@ Created on Sat May 15 11:49:51 2021
 """
 
 from os import path
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -145,9 +145,8 @@ def detection(cur_RGB, Thres_RGB, Switch):
         if Switch[i] == 1 and cur_RGB[i] < Thres_RGB[i]:
             decision = 0
             break
-        if (
-            Switch[i] == 0 and cur_RGB[i] > Thres_RGB[i]
-        ):  # Theory RGB[0]<=ThresRGB[0] and RGB[1]>=ThresRGB[1] and RGB[2]<=ThresRGB[2]:
+        # Theory RGB[0]<=ThresRGB[0] and RGB[1]>=ThresRGB[1] and RGB[2]<=ThresRGB[2]:
+        if Switch[i] == 0 and cur_RGB[i] > Thres_RGB[i]:
             decision = 0
             break
     return decision
@@ -178,7 +177,7 @@ def Signal_detection(
     delta_z = dimension_deltaz / dimension_perpixel
 
     # List of the coordination of the data point
-    lstofcoordinate: List[List[Tuple[int, int, int]]] = []
+    lstofcoordinate: List[Set[Tuple[int, int, int]]] = []
 
     # Looping for different time set (t=0 to t=n, with a step of timelap) and detect user-specified RGB datapoints
     for m in range(0, len(timestamps_with_slices), timelap):
@@ -186,7 +185,7 @@ def Signal_detection(
 
         # Initiate the axis
         z = 0
-        coordinate = []
+        coordinate = set()
         # Looping for different Z-axis values to detect user-specified RGB datapoints
         for filename in lstoffile:
             # Read the respective tif file in the folder (with the pre-generated file name eg. S4 2\T00001\T00001\C02Z001)
@@ -198,7 +197,7 @@ def Signal_detection(
                     if detection(RGB, ThresRGB, ChannelSwitch):
                         # RGB filter: Filtered the pixel with smaller Red, larger Blue and Green then preset threshold (ThresRGB)
                         # Assign the pixel with specific coordination (x,y,z)
-                        coordinate.append((column, row, z))
+                        coordinate.add((column, row, z))
             z = z + delta_z
         lstofcoordinate.append(coordinate)
         print("Time: {0:.2f}%".format((m + 1) / len(timestamps_with_slices) * 100))
@@ -338,7 +337,7 @@ Clustering
 """
 
 
-def optimal_eps(name, convertlst, min_sig, output_dir='.'):
+def optimal_eps(name, convertlst, min_sig, output_dir="."):
     # Initialize
     lsteps = []
     lstelbow = []
@@ -591,7 +590,7 @@ def LoadData(input_raw, input_clustering):
     return Sorted_convertlst, Sorted_class
 
 
-def OptimalCluster_range(Sorted_class, name, output_dir='.'):
+def OptimalCluster_range(Sorted_class, name, output_dir="."):
     # Automatically calculated Cluster_range
     # Count number of signals in each cluster
     Count_clusterID_dict = []
@@ -640,7 +639,9 @@ def CalcClusterCenter(
             Sorted_class, output_name, output_dir
         )
     else:
-        _, Count_clusterID_dict = OptimalCluster_range(Sorted_class, output_name, output_dir)
+        _, Count_clusterID_dict = OptimalCluster_range(
+            Sorted_class, output_name, output_dir
+        )
 
     for i in range(len(Sorted_convertlst)):
         Coord = []
@@ -716,13 +717,13 @@ def InitialCluster(All_Cluster_Centers, Thres4):
     for _ in range(len(All_Cluster_Centers)):  # Loop each time point (t=x)
         not_initialcluster = set()
         # -2 instead of -1 because we compare between two time lapses, those last time lapse can't compare with any, -1 because idx count from 0
-        while (idx != len(All_Cluster_Centers) - 2):
+        while idx != len(All_Cluster_Centers) - 2:
             # Loop each cluster in the time point (t=x)
             for firstcluster in All_Cluster_Centers[idx]:
                 # Loop each cluster in the time point (t=x+1)
                 for secondcluster in All_Cluster_Centers[idx + 1]:
                     # identified not_intitialcluster if a cluster has a distance smaller/equal to the maximum moving distance with another cluster in next time lapse
-                    if (distance(firstcluster, secondcluster) <= Thres4):
+                    if distance(firstcluster, secondcluster) <= Thres4:
                         not_initialcluster.add(tuple(secondcluster))
             Clusters_t2 = set(All_Cluster_Centers[idx + 1])
             Initialcluster_t2 = Clusters_t2 - not_initialcluster
@@ -740,7 +741,7 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
     # Map the centre of the cluster X (time point t0) to the centre of the cluster Y (time point t1), Mapping criteria (shortest movement require from one cluster to another cluster)
     # Thres4: The maximum valid moving distance from cluster X (time point t0) and Y (time point t1), beyond the threshold consider the movement as mismatched
     # InitialClusters is the list with every initial clusters in each initial time points
-    InitialClusters = (initialcluster.copy())
+    InitialClusters = initialcluster.copy()
     # Loop each time point (initial time points)
     for timet0 in range(len(InitialClusters)):
         # Loop each initial cluster in the time point
@@ -763,7 +764,7 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
                     OptimalLinking[1][0][0],
                 )
                 # If nearest cluster distance smaller than Thres3 (noise), remove the nearest cluster and recalculated
-                while (OptimalLinking[0] < Thres3):
+                while OptimalLinking[0] < Thres3:
                     clusters_t2.remove(clusters_t2[OptimalLinking[1]])
                     neigh = NearestNeighbors()
                     neigh.fit(clusters_t2)
@@ -775,8 +776,10 @@ def LinkingCluster(initialcluster, Lst_Cluster_Centers, Thres3, Thres4, Neighbor
                         OptimalLinking[1][0][0],
                     )
                 # If nearest cluster distance smaller than/equal to Thres4 (acceptable moving distance), stored this nearest cluster (t<x+1>) as optimal linked cluster for the current_cluster (t<x>)
-                if (OptimalLinking[0] <= Thres4):
-                    InitialClusters[timet0][clustert0].append(tuple(clusters_t2[OptimalLinking[1]]))
+                if OptimalLinking[0] <= Thres4:
+                    InitialClusters[timet0][clustert0].append(
+                        tuple(clusters_t2[OptimalLinking[1]])
+                    )
     return InitialClusters
 
 
@@ -796,7 +799,7 @@ def CalcSpeedDisplacement(
     for Tracks in All_Tracks:
         for single_Track in Tracks:
             # Not only initial cluster and moving time lapse larger than/equal to Min_Frame
-            if (len(single_Track) >= Min_Frame):  
+            if len(single_Track) >= Min_Frame:
                 Compile_lst.append(single_Track)
                 timeframe.append(len(single_Track))
     ##################################
@@ -808,20 +811,20 @@ def CalcSpeedDisplacement(
     for j in range(len(All_Tracks)):  # Loop each track
         cur_distance = []
         cur_speed = []
-        #Loop each time lapse in each track, start from 1 because of the i-1
-        for i in range(1,len(All_Tracks[j])):
-            #Convert movement (in pixel) into movement (in µm)
-            dist = distance(All_Tracks[j][i-1],All_Tracks[j][i])*dimension_perpixel
+        # Loop each time lapse in each track, start from 1 because of the i-1
+        for i in range(1, len(All_Tracks[j])):
+            # Convert movement (in pixel) into movement (in µm)
+            dist = distance(All_Tracks[j][i - 1], All_Tracks[j][i]) * dimension_perpixel
             cur_distance.append(dist)
-            #Convert speed (in pixel/s) into speed (in µm/s)
-            spd = dist/Interval_time
+            # Convert speed (in pixel/s) into speed (in µm/s)
+            spd = dist / Interval_time
             cur_speed.append(spd)
 
             if j < 2 and i < 5:
                 print("distance: ", dist, " speed: ", spd)
         lstdistance.append(sum(cur_distance))
         lstofspeed.append(np.average(cur_speed))
-        lstframe.append(len(cur_speed)) 
+        lstframe.append(len(cur_speed))
 
     # Store the movement and speed into dictionaries (format: key of dictionary = label of the cluster, value of dictionary = movement of the cluster)
     dic_distance = {}

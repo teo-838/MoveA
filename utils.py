@@ -4,7 +4,7 @@ from os import makedirs, path
 
 def read_csv(path):
     rows = []
-    with open(path, encoding="latin-1") as csvfile:
+    with open(path) as csvfile:
         file_reader = csv.reader(csvfile)
         for row in file_reader:
             rows.append(list(row))

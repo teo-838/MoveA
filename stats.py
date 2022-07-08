@@ -102,7 +102,7 @@ def fig8(TaskNo, Grplabel, boolen, df, permutation, t_lim, output="."):
     Control_color = sns.color_palette("tab10")[1]  # Color for control boxplot
     O65_color = sns.color_palette("tab10")[2]  # Color for O65 boxplot
     # Plot statistical comparison between different treatment and control pairs
-    fig8, ax = plt.subplots(figsize=(1, 30))
+    fig8, ax = plt.subplots(figsize=(5, 10))
     sns.set(style="whitegrid")
     x = "Group"
     y = "Speed (µm/s)"

@@ -618,6 +618,37 @@ def OptimalCluster_range(Sorted_class, name, output_dir="."):
     ax = figclusterN.add_subplot()
     plt.boxplot(lstdistribution)
     ax.set(xlabel=name, ylabel="Number of signals in cluster")
+    ax.hlines(y=[Thres2, Thres1], xmin=0, xmax=2, colors="r", linestyles="--", lw=2)
+    figclusterN.savefig(path.join(output_dir, name + "_clusterdistribution.tiff"))
+
+    return Cluster_range, Count_clusterID_dict
+
+
+def OptimalCluster_rangeManual(Sorted_class, name, Cluster_percentage, output_dir="."):
+    # Automatically calculated Cluster_range
+    # Count number of signals in each cluster
+    Count_clusterID_dict = []
+    lstdistribution = []
+    from collections import Counter
+
+    for i in range(len(Sorted_class)):
+        Count_clusterID_dict.append(Counter(Sorted_class[i]))
+        lstdistribution.extend(
+            list(Counter(Sorted_class[i]).values())
+        )  # 1D array contain number of signals in each cluster
+
+    # Calculated outlier cluster w.r.t number of signals
+    Thres2 = np.percentile(lstdistribution, Cluster_percentage[0])
+    Thres1 = np.percentile(lstdistribution, Cluster_percentage[1])
+
+    Cluster_range = [Thres2, Thres1]
+
+    # Boxplot: the number of signals for each cluster
+    figclusterN = plt.figure(figsize=FIGSIZE)
+    ax = figclusterN.add_subplot()
+    plt.boxplot(lstdistribution)
+    ax.set(xlabel=name, ylabel="Number of signals in cluster")
+    ax.hlines(y=[Thres2, Thres1], xmin=0, xmax=2, colors="r", linestyles="--", lw=2)
     figclusterN.savefig(path.join(output_dir, name + "_clusterdistribution.tiff"))
 
     return Cluster_range, Count_clusterID_dict
@@ -636,8 +667,8 @@ def CalcClusterCenter(
             Sorted_class, output_name, output_dir
         )
     else:
-        _, Count_clusterID_dict = OptimalCluster_range(
-            Sorted_class, output_name, output_dir
+        Cluster_range, Count_clusterID_dict = OptimalCluster_rangeManual(
+            Sorted_class, output_name, Cluster_range, output_dir
         )
 
     for i in range(len(Sorted_convertlst)):

@@ -151,8 +151,8 @@ def fig9(TaskNo, Grplabel, boolen, Group_speed, x_lim, FigSizeW, FigSizeH, outpu
         2
     ]  # Color for O65 median and average vertical line
     if boolen:
-        Color = [Treatment_color, O65_color, Control_color]
-        Colorv = [Treatment_line_color, O65_line_color, Control_line_color]
+        Color = [Treatment_color, Control_color, O65_color]
+        Colorv = [Treatment_line_color, Control_line_color, O65_line_color]
     else:
         Color = [Treatment_color, Control_color]
         Colorv = [Treatment_line_color, Control_line_color]
@@ -199,8 +199,8 @@ def fig10(
     ]  # Color for O65 median and average vertical line
 
     if boolen:
-        Color = [Treatment_color, O65_color, Control_color]
-        Colorv = [Treatment_line_color, O65_line_color, Control_line_color]
+        Color = [Treatment_color, Control_color, O65_color]
+        Colorv = [Treatment_line_color, Control_line_color, O65_line_color]
     else:
         Color = [Treatment_color, Control_color]
         Colorv = [Treatment_line_color, Control_line_color]

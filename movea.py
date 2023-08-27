@@ -139,8 +139,12 @@ RGB DETECTION
 """
 
 
-def detection(cur_RGB, Thres_RGB, Switch):
-    decision = 1
+def detection(cur_val, Thres_val):
+    decision = 0
+    if cur_val > Thres_val:
+        decision = 1
+    '''
+    ###
     for i in range(len(Switch)):
         if Switch[i] == 1 and cur_RGB[i] < Thres_RGB[i]:
             decision = 0
@@ -149,6 +153,7 @@ def detection(cur_RGB, Thres_RGB, Switch):
         if Switch[i] == 0 and cur_RGB[i] > Thres_RGB[i]:
             decision = 0
             break
+    '''
     return decision
 
 
@@ -159,8 +164,8 @@ def Signal_detection(
     output_name: str,
     output_dir: str,
     timelap: int = 1,
-    ThresRGB: Tuple[int, int, int] = (255, 100, 0),
-    ChannelSwitch: Tuple[int, int, int] = (0, 1, 0),
+    Thresval: int = 60,
+    #ChannelSwitch: Tuple[int, int, int] = (0, 1, 0),
 ):
     """Detects signal in a sample.
     :param timestamps_with_slices: List of directory (timestamps) and its corresponding image files (slices) in order.
@@ -193,8 +198,8 @@ def Signal_detection(
             # Loop for the x axis and y axis of the tiff image (pixel by pixel)
             for row in range(typixel):
                 for column in range(txpixel):
-                    RGB = image[row, column]  # RGB at the specific pixel
-                    if detection(RGB, ThresRGB, ChannelSwitch):
+                    Raw_val = image[row, column]  # RGB at the specific pixel
+                    if detection(Raw_val, Thresval):
                         # RGB filter: Filtered the pixel with smaller Red, larger Blue and Green then preset threshold (ThresRGB)
                         # Assign the pixel with specific coordination (x,y,z)
                         coordinate.add((column, row, z))
